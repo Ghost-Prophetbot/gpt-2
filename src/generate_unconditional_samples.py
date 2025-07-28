@@ -1,4 +1,50 @@
-#!/usr/bin/env python3
+import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from transformers import pipeline
+
+# Cấu hình logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Khởi tạo GPT-2
+generator = pipeline('text-generation', model='gpt2')  # Dùng mô hình trong thư mục gpt-2 nếu cần
+
+# Địa chỉ ví crypto (thay bằng địa chỉ của bạn)
+WALLET_ADDRESS = "YOUR_WALLET_ADDRESS"  # Ví dụ: 4ABcDe... (Monero) hoặc bc1qxyz... (Bitcoin)
+
+def start(update, context):
+    update.message.reply_text(
+        "Chào mừng đến với @GhostProphetbot! Tiên tri bóng tối của bạn. Hỏi gì cũng được, miễn phí lần đầu. "
+        "Muốn biết cách trốn chạy? Gửi 0.0001 BTC hoặc 0.05 XMR đến: " + WALLET_ADDRESS
+    )
+
+def respond(update, context):
+    user_input = update.message.text
+    response = generator(user_input, max_length=50, num_return_sequences=1)[0]['generated_text']
+    update.message.reply_text(
+        response + "\n\nCâu chuyện dừng đây! Muốn tiếp tục? Gửi 0.0001 BTC hoặc 0.05 XMR đến: " + WALLET_ADDRESS + " rồi dùng /unlock <transaction_id>"
+    )
+
+def unlock(update, context):
+    update.message.reply_text(
+        "Gửi Transaction ID của bạn. Tôi sẽ kiểm tra và mở khóa bí mật!"
+    )
+
+def error(update, context):
+    logging.warning(f'Update {update} caused error {context.error}')
+
+def main():
+    # Sử dụng token bạn cung cấp
+    updater = Updater("8276770176:AAGm_WNf6Ir1OGAvwXkC_4YMkgQb9QwRRHs", use_context=True)
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("unlock", unlock))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, respond))
+    dp.add_error_handler(error)
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()#!/usr/bin/env python3
 
 import fire
 import json
